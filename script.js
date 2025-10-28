@@ -39,6 +39,7 @@ const account4 = {
 };
 
 const accounts = [account1, account2, account3, account4];
+let loginAcc;
 
 /////////////////////////////////////////////////
 // Elements
@@ -101,26 +102,35 @@ const calcDisplayTotalBalance = function (account) {
     return acc + curr;
   }, 0);
   labelBalance.textContent = `${balance} €`;
+  account.balance = balance;
 };
 
-const calcDisplaySummary = function (movements) {
-  const income = movements
+const updateUI = function (account) {
+  displayMovements(account.movements);
+
+  calcDisplayTotalBalance(account);
+
+  calcDisplaySummary(account);
+};
+
+const calcDisplaySummary = function (account) {
+  const income = account.movements
     .filter(mov => mov > 0)
     .reduce((acc, curr) => {
       return acc + curr;
     }, 0);
   labelSumIn.textContent = `${income} €`;
 
-  const outcome = movements
+  const outcome = account.movements
     .filter(mov => mov < 0)
     .reduce((acc, curr) => {
       return acc + curr;
     }, 0);
   labelSumOut.textContent = `${Math.abs(outcome)} €`;
 
-  const interest = movements
+  const interest = account.movements
     .filter(mov => mov > 0)
-    .map(mov => (mov * 1.2) / 100)
+    .map(mov => (mov * account.interestRate) / 100)
     .reduce((acc, curr) => {
       return acc + curr;
     }, 0);
@@ -135,7 +145,7 @@ loginForm.addEventListener('submit', function (e) {
     inputLoginUsername?.value.trim() !== '' &&
     inputLoginPin?.value.trim() !== ''
   ) {
-    const loginAcc = accounts.find(
+    loginAcc = accounts.find(
       account =>
         account.username === inputLoginUsername.value &&
         account.pin === Number(inputLoginPin.value)
@@ -144,15 +154,13 @@ loginForm.addEventListener('submit', function (e) {
       labelWelcome.textContent = `Welcome back, ${
         loginAcc.owner.split(' ')[0]
       }`;
-
+      loginForm.reset();
+      inputLoginPin.blur();
+      inputLoginUsername.blur();
+      updateUI(loginAcc);
       containerApp.style.opacity = 100;
-
-      displayMovements(loginAcc.movements);
-
-      calcDisplayTotalBalance(loginAcc);
-
-      calcDisplaySummary(loginAcc.movements);
     } else {
+      containerApp.style.opacity = 0;
       iziToast.error({
         message: 'Wrong username or/and PIN',
       });
@@ -161,5 +169,67 @@ loginForm.addEventListener('submit', function (e) {
     iziToast.warning({
       message: 'Please, fill in login and pin',
     });
+  }
+});
+
+btnTransfer.addEventListener('click', function (e) {
+  e.preventDefault();
+  const transferAmount = Number(inputTransferAmount.value);
+  const transferTo = inputTransferTo.value;
+
+  const transferAcc = accounts.find(acc => acc.username === transferTo);
+
+  inputTransferAmount.value = inputTransferTo.value = '';
+
+  if (
+    transferAcc &&
+    transferAmount > 0 &&
+    transferAmount <= loginAcc.balance &&
+    loginAcc.username !== transferAcc.username
+  ) {
+    loginAcc.movements.push(-transferAmount);
+    transferAcc.movements.push(transferAmount);
+
+    updateUI(loginAcc);
+  } else {
+    iziToast.warning({
+      message:
+        'You do NOT have enough money or account you want transfer to does NOT exist',
+    });
+  }
+});
+
+btnClose.addEventListener('click', function (e) {
+  e.preventDefault();
+
+  const closeUsername = inputCloseUsername.value;
+  const closePin = Number(inputClosePin.value);
+
+  if (closeUsername === loginAcc.username && closePin === loginAcc.pin) {
+    const index = accounts.findIndex(acc => acc.username === closeUsername);
+    accounts.splice(index, 1);
+    containerApp.style.opacity = 0;
+    labelWelcome.textContent = `Log in to get started`;
+  } else {
+    iziToast.warning({
+      message: 'Wrong credentials',
+    });
+  }
+
+  inputCloseUsername.value = inputClosePin.value = '';
+});
+
+btnLoan.addEventListener('click', function (e) {
+  e.preventDefault();
+
+  const amountLoan = Number(inputLoanAmount.value);
+  inputLoanAmount.value = '';
+  if (
+    amountLoan &&
+    amountLoan > 0 &&
+    loginAcc.movements.some(mov => mov >= amountLoan * 0.1)
+  ) {
+    loginAcc.movements.push(amountLoan);
+    updateUI(loginAcc);
   }
 });
