@@ -11,28 +11,28 @@
 /////////////////////////////////////////////////
 // Data
 const account1 = {
-  owner: 'Jonas Schmedtmann',
+  owner: 'Olha Shapoval',
   movements: [200, 450, -400, 3000, -650, -130, 70, 1300],
   interestRate: 1.2, // %
   pin: 1111,
 };
 
 const account2 = {
-  owner: 'Jessica Davis',
+  owner: 'Anna Olieinik',
   movements: [5000, 3400, -150, -790, -3210, -1000, 8500, -30],
   interestRate: 1.5,
   pin: 2222,
 };
 
 const account3 = {
-  owner: 'Steven Thomas Williams',
+  owner: 'Ira Merzla',
   movements: [200, -200, 340, -300, -20, 50, 400, -460],
   interestRate: 0.7,
   pin: 3333,
 };
 
 const account4 = {
-  owner: 'Sarah Smith',
+  owner: 'Maryna Kazankova',
   movements: [430, 1000, 700, 50, 90],
   interestRate: 1,
   pin: 4444,
@@ -70,15 +70,18 @@ const inputCloseUsername = document.querySelector('.form__input--user');
 const inputClosePin = document.querySelector('.form__input--pin');
 
 /////////////////////////////////////////////////
-const displayMovements = function (movements) {
+const displayMovements = function (movements, isSorted = false) {
   containerMovements.innerHTML = '';
-  movements.forEach((mov, i) => {
+  let movs = isSorted ? movements.slice().sort((a, b) => a - b) : movements;
+
+  console.log(movs);
+  movs.forEach((mov, i) => {
     const type = mov > 0 ? 'deposit' : 'withdrawal';
     const html = `<div class="movements__row">
           <div class="movements__type movements__type--${type}">${
       i + 1
     } ${type}</div>
-          <div class="movements__value">${mov}€</div>
+          <div class="movements__value">${mov.toFixed(2)}€</div>
         </div>`;
     containerMovements.insertAdjacentHTML('afterbegin', html);
   });
@@ -101,7 +104,7 @@ const calcDisplayTotalBalance = function (account) {
   const balance = account.movements.reduce((acc, curr) => {
     return acc + curr;
   }, 0);
-  labelBalance.textContent = `${balance} €`;
+  labelBalance.textContent = `${balance.toFixed(2)} €`;
   account.balance = balance;
 };
 
@@ -119,14 +122,14 @@ const calcDisplaySummary = function (account) {
     .reduce((acc, curr) => {
       return acc + curr;
     }, 0);
-  labelSumIn.textContent = `${income} €`;
+  labelSumIn.textContent = `${income.toFixed(2)} €`;
 
   const outcome = account.movements
     .filter(mov => mov < 0)
     .reduce((acc, curr) => {
       return acc + curr;
     }, 0);
-  labelSumOut.textContent = `${Math.abs(outcome)} €`;
+  labelSumOut.textContent = `${Math.abs(outcome).toFixed(2)} €`;
 
   const interest = account.movements
     .filter(mov => mov > 0)
@@ -135,7 +138,7 @@ const calcDisplaySummary = function (account) {
       return acc + curr;
     }, 0);
 
-  labelSumInterest.textContent = `${interest} €`;
+  labelSumInterest.textContent = `${interest.toFixed(2)} €`;
 };
 
 loginForm.addEventListener('submit', function (e) {
@@ -222,7 +225,7 @@ btnClose.addEventListener('click', function (e) {
 btnLoan.addEventListener('click', function (e) {
   e.preventDefault();
 
-  const amountLoan = Number(inputLoanAmount.value);
+  const amountLoan = Math.floor(inputLoanAmount.value);
   inputLoanAmount.value = '';
   if (
     amountLoan &&
@@ -232,4 +235,14 @@ btnLoan.addEventListener('click', function (e) {
     loginAcc.movements.push(amountLoan);
     updateUI(loginAcc);
   }
+});
+
+let isSorted = false;
+btnSort.addEventListener('click', function (e) {
+  e.preventDefault();
+  // loginAcc.movements.toSorted((a, b) => {
+  //   a - b;
+  // });
+  displayMovements(loginAcc.movements, !isSorted);
+  isSorted = !isSorted;
 });
